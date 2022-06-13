@@ -19,6 +19,7 @@ end
 %Create tables to save analized data
 save_means = table();
 save_data_D = table();
+save_data = table();
 
 %Check accuracy light and tongue detection, if > 0.8 change value to 1, else to 0
 idx = find(data.lightOn_2(:) >= 0.8);
@@ -40,7 +41,7 @@ for i = 1:numel(index)
     y = join([x, '_1'], delimiters);    
     new_label_PrPn = join(['d_PrP', r], delimiters); 
     save_data.(new_label_PrPn) = distance(data.p_ref,data.p_ref_1, data.(x), data.(y));  
-    if(index(i) == "8")
+    if(r == "8")
         r2 = "1";
         x2 = join(['p', r2], delimiters);
         y2 = join([x2, '_1'], delimiters);
@@ -57,6 +58,9 @@ end
 save_means.Mean_PrPn = rowfun(@mean, save_data, 'SeparateInputs', false, "OutputFormat","uniform");
 save_means.Mean_Dil = rowfun(@sum, save_data_D, 'SeparateInputs', false, "OutputFormat","uniform");
 
+%Calculate distance Pref - Pupil centre over time
+save_means.PrPC = distance(data.p_ref,data.p_ref_1, data.pC, data.pC_1);
+
 
 %Check positions variations over time
 %[ave,stdev] = stat(data.p_ref);
@@ -68,9 +72,11 @@ m = mean(data.p_ref);
 %(light reflection) over column. Both z-score and minmaxnormalzation
 Dilation_Norm = normalize(save_means.Mean_Dil,1);
 PrPn_Norm = normalize(save_means.Mean_PrPn,1);
+PrPC_Norm = normalize(save_means.PrPC,1);
 
 Dilation_NormMM = (save_means.Mean_Dil - min(save_means.Mean_Dil))/(max(save_means.Mean_Dil) - min(save_means.Mean_Dil));
 PrPn_NormMM = (save_means.Mean_PrPn - min(save_means.Mean_PrPn))/(max(save_means.Mean_PrPn) - min(save_means.Mean_PrPn));
+PrPC_NormMM = (save_means.PrPC - min(save_means.PrPC))/(max(save_means.PrPC) - min(save_means.PrPC));
 
 %%PLOTs
 %Plot Mean distances and dilation
@@ -78,8 +84,10 @@ figure()
 plot(time, save_means.Mean_PrPn)
 hold on
 plot(time, save_means.Mean_Dil)
+hold on
+plot(time, save_means.PrPC)
 title('Pupil dilation and mean sum Pref-Pn distances over time','FontSize',26, 'FontName','Arial', 'FontWeight','bold')
-legend("Mean distance Pref - Pupil points", "Pupil dilation",'Location','eastoutside','FontName','Arial', 'FontSize', 17)
+legend("Mean distance Pref - Pupil points", "Pupil dilation", "Distance Pref - Pcentre",'Location','eastoutside','FontName','Arial', 'FontSize', 17)
 xticks(time_ticks)
 xlabel('Time (s)', 'FontSize',20, 'FontName','Arial')
 ylabel('Lenght (pixels)','FontSize',20, 'FontName','Arial')
@@ -104,8 +112,10 @@ figure()
 plot(time, Dilation_Norm)
 hold on
 plot(time, PrPn_Norm)
+hold on
+plot(time, PrPC_Norm)
 title('Normalized (z-score) pupil dilation and movement over time','FontSize',26, 'FontName','Arial', 'FontWeight','bold')
-legend("Normalized Pupil Dilation", "Normalized Mean distance Pupil-PRef",'Location','eastoutside','FontName','Arial', 'FontSize', 17)
+legend("Normalized Pupil Dilation", "Normalized Mean distance Pupil-PRef", "Normalized distance PrPC",'Location','eastoutside','FontName','Arial', 'FontSize', 17)
 xticks(time_ticks)
 xlabel('Time (s)', 'FontSize',20, 'FontName','Arial')
 ylabel('A.U.','FontSize',20, 'FontName','Arial')
@@ -123,8 +133,10 @@ hold on
 plot(time, Dilation_NormMM)
 hold on
 plot(time, PrPn_NormMM)
+hold on
+plot(time, PrPC_NormMM)
 title('All data','FontSize',26, 'FontName','Arial', 'FontWeight','bold')
-legend("Tongue", "LightOn", "Normalized Pupil Dilation (minmax)", "Normalized Mean distance Pupil-PRef (minmax)",'Location','eastoutside','FontName','Arial', 'FontSize', 17)
+legend("Tongue", "LightOn", "Normalized Pupil Dilation (minmax)", "Normalized Mean distance Pupil-PRef (minmax)","Normalized distance PrPC",'Location','eastoutside','FontName','Arial', 'FontSize', 17)
 xticks(time_ticks)
 xlabel('Time (s)', 'FontSize',20, 'FontName','Arial')
 ylabel('A.U.','FontSize',20, 'FontName','Arial')
@@ -140,4 +152,3 @@ function mean = mean(x)
     mean = sum(x)/n;
     %s = sqrt(sum((x-m).^2/n));
 end
-
